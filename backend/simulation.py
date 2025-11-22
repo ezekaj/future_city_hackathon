@@ -73,36 +73,36 @@ def run_simulation(scenario: str, participation_rate: float, shift_fraction: flo
     colors_flex = [get_traffic_light(stress_flex[h], tank_flex[h]) for h in range(24)]
     
     return {
-        'hourlyData': [
+        'hourly_data': [
             {
                 'hour': h,
-                'demandBaseline': float(demand_baseline[h]),
-                'demandFlex': float(demand_flex[h]),
-                'stressBaseline': float(stress_baseline[h]),
-                'stressFlex': float(stress_flex[h]),
-                'tankBaseline': float(tank_baseline[h]),
-                'tankFlex': float(tank_flex[h]),
-                'colorBaseline': colors_baseline[h],
-                'colorFlex': colors_flex[h]
+                'demand': float(demand_baseline[h]),
+                'demand_flex': float(demand_flex[h]),
+                'stress_index': float(stress_baseline[h]),
+                'stress_index_flex': float(stress_flex[h]),
+                'tank_level': float(tank_baseline[h]),
+                'tank_level_flex': float(tank_flex[h]),
+                'color': colors_baseline[h],
+                'color_flex': colors_flex[h]
             }
             for h in range(24)
         ],
         'stats': {
-            'maxDemandBaseline': float(demand_baseline.max()),
-            'maxDemandFlex': float(demand_flex.max()),
-            'redHoursBaseline': sum(1 for c in colors_baseline if c == 'red'),
-            'redHoursFlex': sum(1 for c in colors_flex if c == 'red'),
-            'minTankBaseline': float(tank_baseline.min()) / TANK_CAPACITY_M3 * 100,
-            'minTankFlex': float(tank_flex.min()) / TANK_CAPACITY_M3 * 100
+            'max_demand': float(demand_baseline.max()),
+            'max_demand_flex': float(demand_flex.max()),
+            'red_hours': sum(1 for c in colors_baseline if c == 'red'),
+            'red_hours_flex': sum(1 for c in colors_flex if c == 'red'),
+            'min_tank': float(tank_baseline.min()) / TANK_CAPACITY_M3 * 100,
+            'min_tank_flex': float(tank_flex.min()) / TANK_CAPACITY_M3 * 100
         }
     }
 
 if __name__ == "__main__":
     print("Testing simulation with real Melmark baseline...")
     result = run_simulation('normal_day', 0.25, 0.3)
-    print(f"Max demand baseline: {result['stats']['maxDemandBaseline']:.2f} m3/h")
-    print(f"Max demand flex: {result['stats']['maxDemandFlex']:.2f} m3/h")
-    print(f"Red hours baseline: {result['stats']['redHoursBaseline']}")
-    print(f"Red hours flex: {result['stats']['redHoursFlex']}")
-    print(f"Min tank baseline: {result['stats']['minTankBaseline']:.1f}%")
-    print(f"Min tank flex: {result['stats']['minTankFlex']:.1f}%")
+    print(f"Max demand baseline: {result['stats']['max_demand']:.2f} m3/h")
+    print(f"Max demand flex: {result['stats']['max_demand_flex']:.2f} m3/h")
+    print(f"Red hours baseline: {result['stats']['red_hours']}")
+    print(f"Red hours flex: {result['stats']['red_hours_flex']}")
+    print(f"Min tank baseline: {result['stats']['min_tank']:.1f}%")
+    print(f"Min tank flex: {result['stats']['min_tank_flex']:.1f}%")
