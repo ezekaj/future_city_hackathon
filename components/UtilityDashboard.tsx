@@ -11,6 +11,8 @@ interface Props {
     shift: number;
   };
   onConfigChange: (key: string, value: any) => void;
+  usingRealData?: boolean;
+  baselineData?: any;
 }
 
 const UtilityDashboard: React.FC<Props> = ({ data, config, onConfigChange }) => {
