@@ -345,7 +345,7 @@ const CustomerView: React.FC<Props> = ({ data }) => {
 
 
   const renderRewards = () => (
-    <div className="flex flex-col h-full pt-8 px-6 pb-32 text-white">
+    <div className="flex flex-col h-full pt-8 px-6 pb-32 text-white overflow-y-auto">
        <div className="text-center mb-8">
          <h2 className="text-2xl font-bold">Your Water Rate</h2>
          <p className="text-white/60 text-sm mt-2">Dynamic pricing for peak demand management</p>
