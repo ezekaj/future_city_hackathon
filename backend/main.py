@@ -7,6 +7,7 @@ import uvicorn
 
 from simulation import run_simulation
 from data_ingestion import get_real_baseline_profile
+from household_data import get_household_profile_with_savings
 
 app = FastAPI(title="PeakFlow API", version="1.0.0")
 
@@ -89,7 +90,22 @@ def get_scenarios():
         }
     }
 
+
+@app.get("/api/household/profile")
+def get_household_profile():
+    try:
+        data = get_household_profile_with_savings()
+        return {
+            "success": True,
+            "data": data
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 if __name__ == "__main__":
-    print("Starting PeakFlow API server on http://localhost:8000")
-    print("Docs available at http://localhost:8000/docs")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    print("Starting PeakFlow API server on http://localhost:8001")
+    print("Docs available at http://localhost:8001/docs")
+    uvicorn.run(app, host="0.0.0.0", port=8001)
