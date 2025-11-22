@@ -1,0 +1,5 @@
+{
+  "name": "PeakFlow: Melmark",
+  "description": "Water Demand Response Prototype for the Heilbronn Hackathon. Simulates water stress, tank levels, and customer flexibility campaigns.",
+  "requestFramePermissions": []
+}
