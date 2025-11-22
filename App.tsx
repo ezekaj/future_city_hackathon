@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import UtilityDashboard from './components/UtilityDashboard';
 import CustomerView from './components/CustomerView';
 import { runSimulation } from './services/simulationEngine';
+import { runSimulationAPI, fetchRealBaseline } from './services/apiClient';
+
 import { SimulationResponse, ScenarioType } from './types';
 import { LayoutDashboard, Smartphone, Droplet, ArrowLeft, User, Building2 } from 'lucide-react';
 
@@ -13,11 +15,38 @@ const App: React.FC = () => {
     shift: 0.25,
   });
   const [simData, setSimData] = useState<SimulationResponse | null>(null);
+  const [usingRealData, setUsingRealData] = useState(false);
+  const [baselineData, setBaselineData] = useState<any>(null);
+
 
   useEffect(() => {
-    const data = runSimulation(config.scenario, config.participation, config.shift);
-    setSimData(data);
+    const runSim = async () => {
+      // Try API first
+      const apiResult = await runSimulationAPI({
+        scenario: config.scenario,
+        participation_rate: config.participation,
+        shift_fraction: config.shift
+      });
+      
+      if (apiResult) {
+        setSimData(apiResult);
+        setUsingRealData(true);
+      } else {
+        // Fallback to local simulation
+        const localData = runSimulation(config.scenario, config.participation, config.shift);
+        setSimData(localData);
+        setUsingRealData(false);
+      }
+    };
+    runSim();
   }, [config]);
+
+  // Fetch baseline data for leak detection
+  useEffect(() => {
+    fetchRealBaseline().then(data => {
+      if (data) setBaselineData(data);
+    });
+  }, []);
 
   const handleConfigChange = (key: string, value: any) => {
     setConfig(prev => ({ ...prev, [key]: value }));
@@ -107,7 +136,9 @@ const App: React.FC = () => {
 
         <main className="flex-1 p-6 overflow-auto">
           <div className="max-w-[1600px] mx-auto h-full">
-            <UtilityDashboard 
+            <UtilityDashboard
+              usingRealData={usingRealData}
+              baselineData={baselineData} 
               data={simData} 
               config={config} 
               onConfigChange={handleConfigChange} 
