@@ -106,7 +106,9 @@ Operators + Residents
 
 ## Team
 
-[Your information]
+Elvi Zekaj
+Taulant Ndreka
+Silvestri Ndoj
 
 ## License
 
