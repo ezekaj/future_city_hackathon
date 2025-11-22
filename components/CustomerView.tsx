@@ -222,10 +222,10 @@ const CustomerView: React.FC<Props> = ({ data }) => {
                   <Smartphone size={20} />
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-white font-bold text-sm">Shift Dishwasher</h4>
+                  <h4 className="text-white font-bold text-sm">Laundry Tonight</h4>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-medium">Save €0.60/m³</span>
-                    <span className="text-xs text-white/50">8:00 PM → 11:00 PM</span>
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-medium">50L • Save €0.03</span>
+                    <span className="text-xs text-white/50">Run at 11:00 PM</span>
                   </div>
                 </div>
                 <button 
@@ -244,10 +244,10 @@ const CustomerView: React.FC<Props> = ({ data }) => {
                   <Droplet size={20} />
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-white font-bold text-sm">Eco Shower</h4>
+                  <h4 className="text-white font-bold text-sm">Garden Watering</h4>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-medium">Save €0.30/m³</span>
-                    <span className="text-xs text-white/50">Under 4 mins</span>
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-medium">500L • Save €0.30</span>
+                    <span className="text-xs text-white/50">Wait until 11:00 PM</span>
                   </div>
                 </div>
                 <button 
@@ -426,49 +426,6 @@ const CustomerView: React.FC<Props> = ({ data }) => {
     </div>
   );
 
-       </div>
-
-       <h3 className="text-sm font-bold text-white/60 uppercase tracking-wider mb-4">Dynamic Pricing Tiers</h3>
-       <div className="space-y-3">
-         <div className="bg-white/10 rounded-2xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-rose-500 shadow-lg shadow-rose-500/40"></div>
-                <div>
-                  <div className="font-bold text-sm">Peak Hours</div>
-                  <div className="text-xs text-white/60">18:00 - 22:00</div>
-                </div>
-              </div>
-              <span className="text-lg font-bold">€2.80/m³</span>
-            </div>
-         </div>
-         <div className="bg-white/10 rounded-2xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-amber-500 shadow-lg shadow-amber-500/40"></div>
-                <div>
-                  <div className="font-bold text-sm">Normal Hours</div>
-                  <div className="text-xs text-white/60">06:00 - 18:00, 22:00 - 24:00</div>
-                </div>
-              </div>
-              <span className="text-lg font-bold">€2.50/m³</span>
-            </div>
-         </div>
-         <div className="bg-white/10 rounded-2xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/40"></div>
-                <div>
-                  <div className="font-bold text-sm">Off-Peak Hours</div>
-                  <div className="text-xs text-white/60">00:00 - 06:00</div>
-                </div>
-              </div>
-              <span className="text-lg font-bold">€2.20/m³</span>
-            </div>
-         </div>
-       </div>
-    </div>
-  );
 
 
   const renderProfile = () => {
