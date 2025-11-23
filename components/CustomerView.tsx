@@ -4,8 +4,11 @@ import {
   Smartphone, ThumbsUp, AlertTriangle, Droplet, 
   ChevronRight, ChevronDown, Home, BarChart2, Award, User, Check, 
   Zap, Clock, Shield, Leaf, Settings, Bell, HelpCircle,
-  ArrowLeft, LogOut, Wifi
+  ArrowLeft, LogOut, Wifi, Utensils, Coffee, Wind, Bath, Sprout,
+  Car, CloudRain, Waves, Sparkles, Square, Apple, Soup, Dog, Fish, Droplets
 } from 'lucide-react';
+import { selectActions, getEligibleActionCount, formatSuggestedTime } from '../lib/actionSelector';
+import { ActionRecommendation } from '../lib/actionLibrary';
 import { AreaChart, Area, XAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface Props {
@@ -22,6 +25,27 @@ const BackgroundLayer = ({ active, colorClass }: { active: boolean, colorClass: 
     className={`absolute inset-0 bg-gradient-to-b ${colorClass} transition-opacity duration-1000 ease-in-out ${active ? 'opacity-100' : 'opacity-0'}`}
   />
 );
+
+// Icon mapping for action recommendations
+const getActionIcon = (iconName: string) => {
+  const iconMap: Record<string, typeof Droplet> = {
+    Utensils, Coffee, Wind, Bath, Sprout, Car, CloudRain, Waves,
+    Sparkles, Square, Apple, Soup, Dog, Fish, Droplets, Smartphone, Droplet
+  };
+  return iconMap[iconName] || Droplet;
+};
+
+// Color mapping for action icons
+const getActionColor = (index: number) => {
+  const colors = [
+    { bg: 'bg-blue-500/20', text: 'text-blue-400' },
+    { bg: 'bg-purple-500/20', text: 'text-purple-400' },
+    { bg: 'bg-emerald-500/20', text: 'text-emerald-400' },
+    { bg: 'bg-amber-500/20', text: 'text-amber-400' },
+    { bg: 'bg-rose-500/20', text: 'text-rose-400' }
+  ];
+  return colors[index % colors.length];
+};
 
 const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, onDayChange }) => {
   const [currentHourIndex, setCurrentHourIndex] = useState(17); // Start at 5 PM
@@ -53,6 +77,20 @@ const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, 
   };
 
   const currentData = getHourData(currentHourIndex);
+
+  // Get smart action recommendations based on current context
+  const selectedActions = selectActions(
+    currentHourIndex,
+    currentData.color_flex,
+    new Date(),
+    2 // Show 2 actions
+  );
+
+  const eligibleActionCount = getEligibleActionCount(
+    currentHourIndex,
+    currentData.color_flex,
+    new Date()
+  );
 
   // Generate a static 24h day view for the timeline
   const dayHours = Array.from({ length: 24 }, (_, i) => {
@@ -242,49 +280,56 @@ const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, 
 
         {currentData.color_flex !== TrafficLight.GREEN ? (
           <div className="space-y-3">
-            {/* Action Card 1 */}
-            <div className="group relative overflow-hidden bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-4 transition-all active:scale-[0.98]">
-              <div className="flex items-center gap-4 relative z-10">
-                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
-                  <Smartphone size={20} />
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-white font-bold text-sm">Laundry Tonight</h4>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-medium">50L • +500 pts</span>
-                    <span className="text-xs text-white/50">Run at 11:00 PM</span>
+            {/* Dynamic Action Cards */}
+            {selectedActions.length > 0 ? (
+              selectedActions.map((action, index) => {
+                const Icon = getActionIcon(action.icon);
+                const color = getActionColor(index);
+                const suggestedTime = formatSuggestedTime(action.suggestedTime.start, currentHourIndex, new Date());
+                
+                return (
+                  <div key={action.id} className="group relative overflow-hidden bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-4 transition-all active:scale-[0.98]">
+                    <div className="flex items-center gap-4 relative z-10">
+                      <div className={`w-10 h-10 rounded-full ${color.bg} flex items-center justify-center ${color.text}`}>
+                        <Icon size={20} />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-white font-bold text-sm">{action.title}</h4>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-medium">
+                            {action.waterUsage}L • +{action.points} pts
+                          </span>
+                          <span className="text-xs text-white/50">{suggestedTime}</span>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => toggleAction(action.id)}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                          committedActions.has(action.id) 
+                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
+                            : 'bg-white/10 text-white/50 hover:bg-white/20'
+                        }`}
+                      >
+                        {committedActions.has(action.id) ? <Check size={20} strokeWidth={3} /> : <ChevronRight size={20} />}
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <button 
-                  onClick={() => toggleAction('dishwasher')}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${committedActions.has('dishwasher') ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' : 'bg-white/10 text-white/50 hover:bg-white/20'}`}
-                >
-                  {committedActions.has('dishwasher') ? <Check size={20} strokeWidth={3} /> : <ChevronRight size={20} />}
-                </button>
+                );
+              })
+            ) : (
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
+                <p className="text-sm text-white/60">No actions available at this time</p>
               </div>
-            </div>
-
-            {/* Action Card 2 */}
-             <div className="group relative overflow-hidden bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-4 transition-all active:scale-[0.98]">
-              <div className="flex items-center gap-4 relative z-10">
-                <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400">
-                  <Droplet size={20} />
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-white font-bold text-sm">Garden Watering</h4>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-medium">500L • +5,000 pts</span>
-                    <span className="text-xs text-white/50">Wait until 11:00 PM</span>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => toggleAction('shower')}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${committedActions.has('shower') ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' : 'bg-white/10 text-white/50 hover:bg-white/20'}`}
-                >
-                  {committedActions.has('shower') ? <Check size={20} strokeWidth={3} /> : <ChevronRight size={20} />}
-                </button>
+            )}
+            
+            {/* Action variety indicator */}
+            {eligibleActionCount > 0 && (
+              <div className="text-center">
+                <p className="text-xs text-white/40">
+                  Showing {selectedActions.length} of {eligibleActionCount} available actions
+                </p>
               </div>
-            </div>
+            )}
           </div>
         ) : (
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 flex flex-col items-center text-center backdrop-blur-md">
