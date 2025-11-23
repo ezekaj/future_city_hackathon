@@ -13,6 +13,7 @@ interface Props {
   weeklyOptions: DayOption[];
   selectedDayIndex: number;
   onDayChange: (index: number) => void;
+  onBack?: () => void;
 }
 
 // Helper for gradient transitions
