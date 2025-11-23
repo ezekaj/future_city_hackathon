@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 import uvicorn
+import json
+from pathlib import Path
 
 from simulation import run_simulation
 from data_ingestion import get_real_baseline_profile
@@ -104,6 +106,83 @@ def get_household_profile():
             "success": False,
             "error": str(e)
         }
+
+
+# Helper function to load BWV data
+def load_bwv_data():
+    """Load BWV connectivity data from JSON file"""
+    bwv_file = Path(__file__).parent / "bwv_data.json"
+    with open(bwv_file, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+@app.get("/api/bwv/meta")
+def get_bwv_meta():
+    """Get BWV (Bodensee-Wasserversorgung) connection metadata"""
+    try:
+        bwv_data = load_bwv_data()
+        return {
+            "success": True,
+            "data": bwv_data["meta"]
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/api/bwv/forecast")
+def get_bwv_forecast():
+    """Get BWV weekly hourly connection forecast"""
+    try:
+        bwv_data = load_bwv_data()
+        return {
+            "success": True,
+            "data": {
+                "meta": bwv_data["meta"],
+                "weeklyData": bwv_data["weeklyData"]
+            }
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/api/bwv/alerts")
+def get_bwv_alerts():
+    """Get BWV quota alert hours (WARNING/CRITICAL status)"""
+    try:
+        bwv_data = load_bwv_data()
+        alerts = []
+
+        # Extract hours with WARNING or CRITICAL status
+        for day_data in bwv_data["weeklyData"]:
+            for hour_data in day_data["data"]:
+                if hour_data["status"] in ["WARNING", "CRITICAL"]:
+                    alerts.append({
+                        "day": day_data["day"],
+                        "date": day_data["date"],
+                        "time": hour_data["time"],
+                        "flow_rate": hour_data["flowRate"],
+                        "limit": hour_data["limit"],
+                        "status": hour_data["status"]
+                    })
+
+        return {
+            "success": True,
+            "data": {
+                "quota_limit": bwv_data["meta"]["quota_limit_l_s"],
+                "warning_threshold": bwv_data["meta"]["warning_threshold_l_s"],
+                "alert_count": len(alerts),
+                "alerts": alerts
+            }
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 
 if __name__ == "__main__":
     print("Starting PeakFlow API server on http://localhost:8001")
