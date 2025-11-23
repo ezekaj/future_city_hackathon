@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, ComposedChart, Bar, ReferenceLine, Legend } from 'recharts';
 import { TrafficLight, SimulationResponse, ScenarioType } from '../types';
-import { Zap, Activity, TrendingDown, AlertTriangle, Droplet } from 'lucide-react';
+import { Zap, Activity, TrendingDown, AlertTriangle, Droplet, Network } from 'lucide-react';
 
 interface Props {
   data: SimulationResponse;
@@ -16,6 +16,21 @@ interface Props {
 }
 
 const UtilityDashboard: React.FC<Props> = ({ data, config, onConfigChange }) => {
+
+  // BWV connection data
+  const [bwvMeta, setBwvMeta] = useState<any>(null);
+
+  useEffect(() => {
+    // Fetch BWV metadata on mount
+    fetch('http://localhost:8001/api/bwv/meta')
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          setBwvMeta(result.data);
+        }
+      })
+      .catch(err => console.error('Failed to load BWV data:', err));
+  }, []);
   
   const formatHour = (tick: number) => `${tick}:00`;
 
@@ -140,6 +155,26 @@ const UtilityDashboard: React.FC<Props> = ({ data, config, onConfigChange }) => 
                </div>
             )}
           </div>
+
+          {/* BWV Connection Status */}
+          {bwvMeta && (
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-xs font-bold uppercase text-slate-400 tracking-wider">BWV Connection</span>
+                <Network className="w-4 h-4 text-cyan-500" />
+              </div>
+              <div className="flex items-end gap-2">
+                <span className="text-2xl font-bold text-slate-800">{bwvMeta.quota_limit_l_s}</span>
+                <span className="text-sm text-slate-400 mb-1">L/s</span>
+              </div>
+              <div className="text-xs text-slate-500 mt-1">
+                Supplier: {bwvMeta.provider}
+              </div>
+              <div className="text-xs text-emerald-600 font-medium mt-1">
+                Status: Connected
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
