@@ -1,0 +1,17 @@
+[Unit]
+Description=PeakFlow Water Monitoring Dashboard (Streamlit)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/peakflow
+Environment="PATH=/opt/peakflow/venv/bin"
+ExecStart=/opt/peakflow/venv/bin/streamlit run monitor.py --server.port 8501 --server.address 0.0.0.0
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
