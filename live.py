@@ -21,8 +21,6 @@ if 'sim_active' not in st.session_state:
     st.session_state.sim_active = False
 if 'sim_start_time' not in st.session_state:
     st.session_state.sim_start_time = None
-if 'sim_speed' not in st.session_state:
-    st.session_state.sim_speed = 1
 if 'last_processed_hour' not in st.session_state:
     st.session_state.last_processed_hour = -1
 
@@ -46,40 +44,36 @@ def trigger_webhook(url, payload):
         return False
 
 # --- UI LAYOUT ---
-col_title, col_controls = st.columns([3, 2])
+col_title, col_controls = st.columns([3, 1])
 
 with col_title:
     st.title("⏱️ HNVG FutureCity Simulation")
 
 # --- SIMULATION CONTROLS ---
 with col_controls:
-    with st.expander("🎮 Simulation Controls", expanded=True):
-        c1, c2, c3 = st.columns([1, 1, 1])
-        
-        # Speed Selector
-        speed = c1.select_slider("Speed", options=[1, 2, 5, 10, 20], value=1, key="speed_selector")
-        st.session_state.sim_speed = speed
-        
-        # Start/Stop Buttons
-        with c2:
-            st.write("") # Spacer
-            if st.button("▶️ Start", use_container_width=True):
-                st.session_state.sim_active = True
-                if st.session_state.sim_start_time is None:
-                    st.session_state.sim_start_time = time.time()
-                st.rerun()
+    st.write("") # Vertical spacer
+    st.write("")
+    c_start, c_reset = st.columns(2)
+    
+    with c_start:
+        if st.button("▶️ Start", use_container_width=True):
+            st.session_state.sim_active = True
+            if st.session_state.sim_start_time is None:
+                st.session_state.sim_start_time = time.time()
+            st.rerun()
 
-        with c3:
-            st.write("") # Spacer
-            if st.button("⏹️ Reset", use_container_width=True):
-                st.session_state.sim_active = False
-                st.session_state.sim_start_time = None
-                st.session_state.last_processed_hour = -1
-                st.rerun()
+    with c_reset:
+        if st.button("⏹️ Reset", use_container_width=True):
+            st.session_state.sim_active = False
+            st.session_state.sim_start_time = None
+            st.session_state.last_processed_hour = -1
+            st.rerun()
 
 # --- DATA PREPARATION ---
-api_url = st.sidebar.text_input("API URL", DEFAULT_API_URL)
-webhook_url = st.sidebar.text_input("Webhook URL", DEFAULT_WEBHOOK_URL)
+# Hardcoded URLs
+api_url = DEFAULT_API_URL
+webhook_url = DEFAULT_WEBHOOK_URL
+
 data_json = fetch_data(api_url)
 
 if not data_json:
@@ -112,9 +106,9 @@ if st.session_state.sim_active and st.session_state.sim_start_time:
     # Calculate elapsed real time
     elapsed_real_seconds = time.time() - st.session_state.sim_start_time
     
-    # 1 Minute Real Time = 1 Day (24 hours) Simulated
-    # 60 seconds = 24 hours -> 1 hour = 2.5 seconds (at 1x speed)
-    seconds_per_hour = 2.5 / st.session_state.sim_speed
+    # FIXED SPEED: 1 Minute Real Time = 1 Day (24 hours) Simulated
+    # 60 seconds = 24 hours -> 1 hour = 2.5 seconds
+    seconds_per_hour = 2.5
     
     current_hour_index = int(elapsed_real_seconds / seconds_per_hour)
     

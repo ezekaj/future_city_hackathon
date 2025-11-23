@@ -4,9 +4,9 @@ import requests
 import altair as alt
 
 # --- CONFIGURATION ---
-# Default values from your original dashboard.py
 DEFAULT_API_URL = "http://64.226.120.234:5000/api/forecast"
 DEFAULT_WEBHOOK_URL = "https://n8n.ligaime.com/webhook/ca98f397-cf85-4021-a6bf-4a9253b9f848"
+LOGO_URL = "https://www.hnvg.de/wGlobal/wGlobal/layout/images/hnvg-logo.png"
 
 # --- PAGE SETUP ---
 st.set_page_config(
@@ -35,36 +35,36 @@ def trigger_webhook(url, payload):
         return 500
 
 # --- MAIN APP ---
-col_title, col_settings = st.columns([3, 1])
+
+# 1. LOGO SECTION (Centered)
+# We use 3 columns: Left spacer, Middle for logo, Right spacer
+l_col1, l_col2, l_col3 = st.columns([3, 2, 3])
+
+with l_col2:
+    # use_container_width fills the middle column
+    st.image(LOGO_URL, use_container_width=True) 
+
+st.markdown("---") # Optional visual separator
+
+# 2. TITLE & REFRESH SECTION
+col_title, col_refresh = st.columns([4, 1])
 
 with col_title:
-    st.title("💧 HNVG Water Forecast")
+    st.title("HNVG Water Forecast")
 
-# --- SETTINGS (Moved from Sidebar) ---
-with st.expander("⚙️ Connection Settings", expanded=False):
-    col_s1, col_s2, col_s3 = st.columns([2, 2, 1])
-    
-    with col_s1:
-        api_url = st.text_input("Flask API URL", value=DEFAULT_API_URL)
-    
-    with col_s2:
-        webhook_url = st.text_input("n8n Webhook URL", value=DEFAULT_WEBHOOK_URL)
-        
-    with col_s3:
-        st.write("") # Vertical spacer
-        st.write("") 
-        if st.button("🔄 Refresh Data", use_container_width=True):
-            st.cache_data.clear()
-            st.rerun()
 
-# 1. Fetch Data
+# Set URLs from defaults
+api_url = DEFAULT_API_URL
+webhook_url = DEFAULT_WEBHOOK_URL
+
+# 3. Fetch Data
 data_json = fetch_data(api_url)
 
 if not data_json:
-    st.error(f"❌ Could not connect to API at `{api_url}`. Please check the settings above.")
+    st.error(f"❌ Could not connect to API at `{api_url}`.")
     st.stop()
 
-# 2. Process Data
+# 4. Process Data
 meta = data_json.get('meta', {})
 weekly_data = data_json.get('weeklyData', [])
 limit_val = meta.get('quota_limit_l_s', 400)
@@ -108,7 +108,6 @@ with tab1:
     
     with col_chart:
         st.subheader("Weekly Flow Trend")
-        # Line Chart using Altair for better threshold visualization
         base = alt.Chart(df).encode(x='Date:T')
         
         line = alt.Chart(df.reset_index()).mark_line().encode(
