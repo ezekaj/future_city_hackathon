@@ -180,7 +180,7 @@ const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, 
           >
             {weeklyOptions.map((day) => (
               <option key={day.index} value={day.index} className="bg-slate-900 text-white">
-                {day.day} - {day.scenario}
+                {day.day}
               </option>
             ))}
           </select>
@@ -200,8 +200,9 @@ const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, 
           ref={timelineRef}
           className="flex gap-3 overflow-x-auto py-4 px-6 no-scrollbar snap-x w-full"
         >
-          {upcomingHours.map((h, idx) => {
+          {dayHours.map((h, idx) => {
             const isSelected = h.index === currentHourIndex;
+            const isPast = h.index < currentHourIndex;
             const statusColor = 
               h.data.color_flex === TrafficLight.RED ? 'bg-rose-500 shadow-rose-500/40' : 
               h.data.color_flex === TrafficLight.YELLOW ? 'bg-amber-500 shadow-amber-500/40' : 
@@ -214,7 +215,8 @@ const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, 
                   setCurrentHourIndex(h.index);
                 }}
                 className={`snap-start relative flex-shrink-0 w-16 h-24 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all duration-300 border border-transparent
-                  ${isSelected ? 'bg-white/20 backdrop-blur-md ring-1 ring-white/50 z-10 shadow-[0_0_20px_rgba(255,255,255,0.15)]' : 'bg-white/5 hover:bg-white/10 opacity-70'}
+                  ${isSelected ? 'bg-white/20 backdrop-blur-md ring-1 ring-white/50 z-10 shadow-[0_0_20px_rgba(255,255,255,0.15)]' : 'bg-white/5 hover:bg-white/10'}
+                  ${isPast ? 'opacity-40' : 'opacity-70'}
                 `}
               >
                 <span className="text-xs font-bold text-white">{h.displayHour}:00</span>
