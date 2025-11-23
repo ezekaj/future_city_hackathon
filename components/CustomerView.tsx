@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { selectActions, getEligibleActionCount, formatSuggestedTime } from '../lib/actionSelector';
 import { ActionRecommendation } from '../lib/actionLibrary';
+import { calculateTier, getNextTier, calculateProgressToNextTier, getPointsToNextTier, Tier, TIERS } from '../lib/tierSystem';
+import { TierUpgradeNotification } from './TierUpgradeNotification';
 import { AreaChart, Area, XAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface Props {
@@ -49,7 +51,36 @@ const getActionColor = (index: number) => {
 
 const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, onDayChange }) => {
   const [currentHourIndex, setCurrentHourIndex] = useState(17); // Start at 5 PM
-  const [committedActions, setCommittedActions] = useState<Set<string>>(new Set());
+
+  // Action History: tracks dates when each action was committed for repeatable daily rewards
+  const [actionHistory, setActionHistory] = useState<Map<string, string[]>>(() => {
+    const saved = localStorage.getItem('peakflow-action-history');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as Record<string, string[]>;
+        return new Map(Object.entries(parsed));
+      } catch {
+        return new Map();
+      }
+    }
+
+    // Migration: convert old Set-based committedActions to new Map format
+    const oldCommitted = localStorage.getItem('peakflow-committed');
+    if (oldCommitted) {
+      try {
+        const oldSet = JSON.parse(oldCommitted) as string[];
+        const today = new Date().toISOString().split('T')[0];
+        const migrated = new Map(oldSet.map(id => [id, [today]]));
+        localStorage.removeItem('peakflow-committed'); // Clear old format
+        return migrated;
+      } catch {
+        return new Map();
+      }
+    }
+
+    return new Map();
+  });
+
   const [activeTab, setActiveTab] = useState<'home' | 'usage' | 'rewards' | 'profile'>('home');
   
   // Profile Sub-view state
@@ -66,6 +97,29 @@ const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, 
   const toggleSetting = (key: keyof typeof settings) => {
     setSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
+
+  // Tier System State
+  const [tierState, setTierState] = useState<{
+    currentTierId: number;
+    showNotification: boolean;
+    pendingTierUpgrade: Tier | null;
+  }>(() => {
+    // Load from localStorage on mount
+    const saved = localStorage.getItem('peakflow-tier');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          currentTierId: parsed.currentTierId || 1,
+          showNotification: false,
+          pendingTierUpgrade: null
+        };
+      } catch {
+        return { currentTierId: 1, showNotification: false, pendingTierUpgrade: null };
+      }
+    }
+    return { currentTierId: 1, showNotification: false, pendingTierUpgrade: null };
+  });
 
   // Scroll ref for timeline
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -92,6 +146,53 @@ const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, 
     new Date()
   );
 
+  // Calculate total points from committed actions (cumulative across all days)
+  const totalPoints = selectedActions
+    .reduce((sum, action) => {
+      const commitCount = actionHistory.get(action.id)?.length || 0;
+      return sum + (action.points * commitCount);
+    }, 0);
+
+  const totalLitersShifted = selectedActions
+    .reduce((sum, action) => {
+      const commitCount = actionHistory.get(action.id)?.length || 0;
+      return sum + (action.waterUsage * commitCount);
+    }, 0);
+
+  // Calculate tier information
+  const currentTier = calculateTier(totalPoints);
+  const nextTier = getNextTier(tierState.currentTierId);
+  const progressToNext = calculateProgressToNextTier(totalPoints, currentTier, nextTier);
+  const pointsToNext = getPointsToNextTier(totalPoints, nextTier);
+
+  // Watch for tier upgrades
+  useEffect(() => {
+    const newTier = calculateTier(totalPoints);
+
+    if (newTier.id > tierState.currentTierId) {
+      // TIER UPGRADE! Show notification after delay
+      setTimeout(() => {
+        setTierState({
+          currentTierId: newTier.id,
+          showNotification: true,
+          pendingTierUpgrade: newTier
+        });
+
+        // Save to localStorage
+        localStorage.setItem('peakflow-tier', JSON.stringify({
+          currentTierId: newTier.id,
+          totalPoints
+        }));
+      }, 800); // Delay for dramatic effect
+    }
+  }, [totalPoints, tierState.currentTierId]);
+
+  // Persist action history to localStorage
+  useEffect(() => {
+    const historyObject = Object.fromEntries(actionHistory);
+    localStorage.setItem('peakflow-action-history', JSON.stringify(historyObject));
+  }, [actionHistory]);
+
   // Generate a static 24h day view for the timeline
   const dayHours = Array.from({ length: 24 }, (_, i) => {
     return {
@@ -108,11 +209,31 @@ const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, 
     ...dayHours.slice(0, currentHourIndex)
   ];
 
+  // Helper to check if action was committed today
+  const isCommittedToday = (id: string): boolean => {
+    const today = new Date().toISOString().split('T')[0];
+    return actionHistory.get(id)?.includes(today) || false;
+  };
+
   const toggleAction = (id: string) => {
-    const newSet = new Set(committedActions);
-    if (newSet.has(id)) newSet.delete(id);
-    else newSet.add(id);
-    setCommittedActions(newSet);
+    const today = new Date().toISOString().split('T')[0];
+    const newHistory = new Map(actionHistory);
+    const dates = newHistory.get(id) || [];
+
+    if (dates.includes(today)) {
+      // Remove today's date
+      const updatedDates = dates.filter(d => d !== today);
+      if (updatedDates.length === 0) {
+        newHistory.delete(id);
+      } else {
+        newHistory.set(id, updatedDates);
+      }
+    } else {
+      // Add today's date
+      newHistory.set(id, [...dates, today]);
+    }
+
+    setActionHistory(newHistory);
   };
 
   // Theme configuration
@@ -302,15 +423,15 @@ const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, 
                           <span className="text-xs text-white/50">{suggestedTime}</span>
                         </div>
                       </div>
-                      <button 
+                      <button
                         onClick={() => toggleAction(action.id)}
                         className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
-                          committedActions.has(action.id) 
-                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
+                          isCommittedToday(action.id)
+                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
                             : 'bg-white/10 text-white/50 hover:bg-white/20'
                         }`}
                       >
-                        {committedActions.has(action.id) ? <Check size={20} strokeWidth={3} /> : <ChevronRight size={20} />}
+                        {isCommittedToday(action.id) ? <Check size={20} strokeWidth={3} /> : <ChevronRight size={20} />}
                       </button>
                     </div>
                   </div>
@@ -426,15 +547,25 @@ const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, 
        {/* Point Balance Card */}
        <div className="bg-gradient-to-br from-emerald-500/20 to-green-600/20 border border-emerald-500/30 rounded-3xl p-6 mb-6 relative overflow-hidden">
          <div className="relative z-10 text-center">
-           <span className="text-xs text-emerald-200 uppercase tracking-wider">Total Impact Points</span>
-           <div className="text-6xl font-black text-white mt-2 drop-shadow-lg">1,240</div>
-           <div className="text-sm text-emerald-300 mt-2">Next milestone: 1,500 pts</div>
+           <div className="text-5xl mb-2">{currentTier.badge}</div>
+           <span className="text-xs text-emerald-200 uppercase tracking-wider">{currentTier.name}</span>
+           <div className="text-6xl font-black text-white mt-2 drop-shadow-lg">{totalPoints.toLocaleString()}</div>
+           {nextTier && (
+             <div className="text-sm text-emerald-300 mt-2">
+               {pointsToNext} pts to {nextTier.name}
+             </div>
+           )}
+           {!nextTier && (
+             <div className="text-sm text-emerald-300 mt-2">🎉 Max Tier Reached!</div>
+           )}
          </div>
 
          {/* Progress Bar */}
-         <div className="relative z-10 mt-4 h-2 bg-white/10 rounded-full overflow-hidden">
-           <div className="h-full bg-emerald-400" style={{ width: '82.6%' }}></div>
-         </div>
+         {nextTier && (
+           <div className="relative z-10 mt-4 h-2 bg-white/10 rounded-full overflow-hidden">
+             <div className="h-full bg-emerald-400 transition-all duration-500" style={{ width: `${progressToNext}%` }}></div>
+           </div>
+         )}
 
          <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-500/30 blur-3xl rounded-full translate-y-1/2 -translate-x-1/2"></div>
        </div>
@@ -443,79 +574,62 @@ const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, 
        <div className="bg-white/10 rounded-2xl p-4 mb-6">
          <div className="flex items-center justify-between mb-2">
            <span className="text-sm text-white/60">This Month</span>
-           <span className="text-2xl font-bold text-emerald-400">+380 pts</span>
+           <span className="text-2xl font-bold text-emerald-400">+{totalPoints} pts</span>
          </div>
-         <div className="text-xs text-white/40">38 liters shifted from peak hours</div>
+         <div className="text-xs text-white/40">{totalLitersShifted} liters shifted from peak hours</div>
        </div>
 
-       {/* Redemption Tiers */}
-       <h3 className="text-sm font-bold text-white/60 uppercase tracking-wider mb-4">Reward Tiers</h3>
+       {/* Heilbronn Reward Tiers */}
+       <h3 className="text-sm font-bold text-white/60 uppercase tracking-wider mb-4">Heilbronn Experiences</h3>
        <div className="space-y-3">
+         {TIERS.map((tier) => {
+           const isUnlocked = totalPoints >= tier.threshold;
+           return (
+             <div key={tier.id}>
+               {/* Tier Header */}
+               <div
+                 className={`rounded-2xl p-4 border ${
+                   isUnlocked
+                     ? 'bg-white/10 border-emerald-500/30'
+                     : 'bg-white/5 border-white/10'
+                 }`}
+               >
+                 <div className="flex items-center justify-between mb-3">
+                   <div className="flex items-center gap-3">
+                     <div className="text-3xl">{tier.badge}</div>
+                     <div>
+                       <div className="font-bold text-sm flex items-center gap-2">
+                         {tier.name}
+                         {isUnlocked && <Check size={14} className="text-emerald-400" />}
+                       </div>
+                       <div className="text-xs text-white/60">{tier.title}</div>
+                     </div>
+                   </div>
+                   <span className={`text-sm font-bold ${
+                     isUnlocked ? 'text-emerald-400' : 'text-white/40'
+                   }`}>
+                     {tier.threshold} pts
+                   </span>
+                 </div>
 
-         {/* 500 pts - Unlocked */}
-         <div className="bg-white/10 rounded-2xl p-4 border border-emerald-500/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
-                  <Check size={18} className="text-white" />
-                </div>
-                <div>
-                  <div className="font-bold text-sm">Early Adopter</div>
-                  <div className="text-xs text-white/60">Exclusive badge</div>
-                </div>
-              </div>
-              <span className="text-sm font-bold text-emerald-400">500 pts</span>
-            </div>
-         </div>
-
-         {/* 1,000 pts - Unlocked */}
-         <div className="bg-white/10 rounded-2xl p-4 border border-emerald-500/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
-                  <Check size={18} className="text-white" />
-                </div>
-                <div>
-                  <div className="font-bold text-sm">Tree Planter</div>
-                  <div className="text-xs text-white/60">1 tree planted in your name</div>
-                </div>
-              </div>
-              <span className="text-sm font-bold text-emerald-400">1,000 pts</span>
-            </div>
-         </div>
-
-         {/* 1,500 pts - Locked */}
-         <div className="bg-white/10 rounded-2xl p-4 border border-white/10">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full border-2 border-white/30 flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-white/30"></div>
-                </div>
-                <div>
-                  <div className="font-bold text-sm">Bill Credit</div>
-                  <div className="text-xs text-white/60">€5 off next water bill</div>
-                </div>
-              </div>
-              <span className="text-sm font-bold text-white/40">1,500 pts</span>
-            </div>
-         </div>
-
-         {/* 5,000 pts - Locked */}
-         <div className="bg-white/10 rounded-2xl p-4 border border-white/10">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full border-2 border-white/30 flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-white/30"></div>
-                </div>
-                <div>
-                  <div className="font-bold text-sm">Grid Guardian</div>
-                  <div className="text-xs text-white/60">VIP status + priority support</div>
-                </div>
-              </div>
-              <span className="text-sm font-bold text-white/40">5,000 pts</span>
-            </div>
-         </div>
-
+                 {/* Tier Rewards */}
+                 <div className="space-y-2 mt-3 pl-11">
+                   {tier.rewardDetails.map((reward, idx) => (
+                     <div
+                       key={idx}
+                       className={`text-xs flex items-start gap-2 ${
+                         isUnlocked ? 'text-white/80' : 'text-white/40'
+                       }`}
+                     >
+                       <span className="text-base">{reward.icon}</span>
+                       <span>{reward.name}</span>
+                     </div>
+                   ))}
+                 </div>
+               </div>
+             </div>
+           );
+         })}
        </div>
     </div>
   );
@@ -600,10 +714,10 @@ const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, 
         <h2 className="text-2xl font-bold mb-6">My Profile</h2>
         <div className="bg-white/10 rounded-3xl p-6 flex items-center gap-4 mb-6">
           <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center text-2xl font-bold text-emerald-950 shadow-lg shadow-emerald-500/20">
-            13
+            17
           </div>
           <div>
-            <h3 className="text-lg font-bold">13thirty8</h3>
+            <h3 className="text-lg font-bold">17thirty8</h3>
             <p className="text-white/60 text-sm">Melmark District</p>
             <div className="flex items-center gap-2 mt-2">
               <Shield size={14} className="text-emerald-400" />
@@ -694,7 +808,7 @@ const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, 
           <div className="flex gap-3">
             <div className="flex flex-col items-end">
                <span className="text-[10px] text-white/60 font-bold uppercase">Impact</span>
-               <span className="text-sm font-bold text-white">1,240</span>
+               <span className="text-sm font-bold text-white">{totalPoints.toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -747,6 +861,18 @@ const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, 
         
         {/* iOS Home Indicator */}
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-white/20 rounded-full z-40"></div>
+
+        {/* Tier Upgrade Notification */}
+        {tierState.showNotification && tierState.pendingTierUpgrade && (
+          <TierUpgradeNotification
+            tier={tierState.pendingTierUpgrade}
+            onDismiss={() => setTierState(prev => ({
+              ...prev,
+              showNotification: false,
+              pendingTierUpgrade: null
+            }))}
+          />
+        )}
 
       </div>
     </div>
