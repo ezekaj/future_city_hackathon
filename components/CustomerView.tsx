@@ -250,7 +250,7 @@ const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, 
                 <div className="flex-1">
                   <h4 className="text-white font-bold text-sm">Laundry Tonight</h4>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-medium">50L • Save €0.03</span>
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-medium">50L • +500 pts</span>
                     <span className="text-xs text-white/50">Run at 11:00 PM</span>
                   </div>
                 </div>
@@ -272,7 +272,7 @@ const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, 
                 <div className="flex-1">
                   <h4 className="text-white font-bold text-sm">Garden Watering</h4>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-medium">500L • Save €0.30</span>
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-medium">500L • +5,000 pts</span>
                     <span className="text-xs text-white/50">Wait until 11:00 PM</span>
                   </div>
                 </div>
@@ -373,81 +373,103 @@ const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, 
   const renderRewards = () => (
     <div className="flex flex-col h-full pt-8 px-6 pb-32 text-white overflow-y-auto">
        <div className="text-center mb-8">
-         <h2 className="text-2xl font-bold">Your Water Rate</h2>
-         <p className="text-white/60 text-sm mt-2">Dynamic pricing for peak demand management</p>
+         <h2 className="text-2xl font-bold">Your Impact</h2>
+         <p className="text-white/60 text-sm mt-2">Points earned by shifting peak demand</p>
        </div>
 
+       {/* Point Balance Card */}
        <div className="bg-gradient-to-br from-emerald-500/20 to-green-600/20 border border-emerald-500/30 rounded-3xl p-6 mb-6 relative overflow-hidden">
-         <div className="relative z-10 flex items-center justify-between">
-            <div>
-              <span className="text-xs text-emerald-200 uppercase tracking-wider">Standard Rate</span>
-              <div className="text-3xl font-bold text-white/50 line-through">€2.50</div>
-            </div>
-            <div className="text-right">
-              <span className="text-xs text-emerald-200 uppercase tracking-wider">Your Rate</span>
-              <div className="text-5xl font-black text-white drop-shadow-lg">€2.35</div>
-              <span className="text-xs text-emerald-300">per m³</span>
-            </div>
+         <div className="relative z-10 text-center">
+           <span className="text-xs text-emerald-200 uppercase tracking-wider">Total Impact Points</span>
+           <div className="text-6xl font-black text-white mt-2 drop-shadow-lg">1,240</div>
+           <div className="text-sm text-emerald-300 mt-2">Next milestone: 1,500 pts</div>
          </div>
-         <div className="mt-4 pt-4 border-t border-emerald-500/20">
-           <div className="text-sm text-emerald-200 font-medium">6% discount earned this month</div>
+
+         {/* Progress Bar */}
+         <div className="relative z-10 mt-4 h-2 bg-white/10 rounded-full overflow-hidden">
+           <div className="h-full bg-emerald-400" style={{ width: '82.6%' }}></div>
          </div>
+
          <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-500/30 blur-3xl rounded-full translate-y-1/2 -translate-x-1/2"></div>
        </div>
 
+       {/* This Month Impact */}
        <div className="bg-white/10 rounded-2xl p-4 mb-6">
          <div className="flex items-center justify-between mb-2">
-           <span className="text-sm text-white/60">This Month Savings</span>
-           <span className="text-2xl font-bold text-emerald-400">€12.40</span>
+           <span className="text-sm text-white/60">This Month</span>
+           <span className="text-2xl font-bold text-emerald-400">+380 pts</span>
          </div>
-         <div className="text-xs text-white/40">Based on 15.5 m³ consumption</div>
-         <div className="mt-3 pt-3 border-t border-white/10">
-           <div className="text-xs text-white/60 mb-1">Projected Bill</div>
-           <div className="flex items-center gap-2">
-             <span className="text-lg font-bold text-white">€36.43</span>
-             <span className="text-sm text-white/40 line-through">€48.83</span>
-           </div>
-         </div>
+         <div className="text-xs text-white/40">38 liters shifted from peak hours</div>
        </div>
 
-       <h3 className="text-sm font-bold text-white/60 uppercase tracking-wider mb-4">Dynamic Pricing Tiers</h3>
+       {/* Redemption Tiers */}
+       <h3 className="text-sm font-bold text-white/60 uppercase tracking-wider mb-4">Reward Tiers</h3>
        <div className="space-y-3">
-         <div className="bg-white/10 rounded-2xl p-4">
+
+         {/* 500 pts - Unlocked */}
+         <div className="bg-white/10 rounded-2xl p-4 border border-emerald-500/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-rose-500 shadow-lg shadow-rose-500/40"></div>
+                <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
+                  <Check size={18} className="text-white" />
+                </div>
                 <div>
-                  <div className="font-bold text-sm">Peak Hours</div>
-                  <div className="text-xs text-white/60">18:00-22:00</div>
+                  <div className="font-bold text-sm">Early Adopter</div>
+                  <div className="text-xs text-white/60">Exclusive badge</div>
                 </div>
               </div>
-              <span className="text-lg font-bold">€2.80/m³</span>
+              <span className="text-sm font-bold text-emerald-400">500 pts</span>
             </div>
          </div>
-         <div className="bg-white/10 rounded-2xl p-4">
+
+         {/* 1,000 pts - Unlocked */}
+         <div className="bg-white/10 rounded-2xl p-4 border border-emerald-500/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-amber-500 shadow-lg shadow-amber-500/40"></div>
+                <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
+                  <Check size={18} className="text-white" />
+                </div>
                 <div>
-                  <div className="font-bold text-sm">Normal Hours</div>
-                  <div className="text-xs text-white/60">06:00-18:00, 22:00-24:00</div>
+                  <div className="font-bold text-sm">Tree Planter</div>
+                  <div className="text-xs text-white/60">1 tree planted in your name</div>
                 </div>
               </div>
-              <span className="text-lg font-bold">€2.50/m³</span>
+              <span className="text-sm font-bold text-emerald-400">1,000 pts</span>
             </div>
          </div>
-         <div className="bg-white/10 rounded-2xl p-4">
+
+         {/* 1,500 pts - Locked */}
+         <div className="bg-white/10 rounded-2xl p-4 border border-white/10">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/40"></div>
+                <div className="w-8 h-8 rounded-full border-2 border-white/30 flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-full bg-white/30"></div>
+                </div>
                 <div>
-                  <div className="font-bold text-sm">Off-Peak Hours</div>
-                  <div className="text-xs text-white/60">00:00-06:00</div>
+                  <div className="font-bold text-sm">Bill Credit</div>
+                  <div className="text-xs text-white/60">€5 off next water bill</div>
                 </div>
               </div>
-              <span className="text-lg font-bold">€2.20/m³</span>
+              <span className="text-sm font-bold text-white/40">1,500 pts</span>
             </div>
          </div>
+
+         {/* 5,000 pts - Locked */}
+         <div className="bg-white/10 rounded-2xl p-4 border border-white/10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full border-2 border-white/30 flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-full bg-white/30"></div>
+                </div>
+                <div>
+                  <div className="font-bold text-sm">Grid Guardian</div>
+                  <div className="text-xs text-white/60">VIP status + priority support</div>
+                </div>
+              </div>
+              <span className="text-sm font-bold text-white/40">5,000 pts</span>
+            </div>
+         </div>
+
        </div>
     </div>
   );
