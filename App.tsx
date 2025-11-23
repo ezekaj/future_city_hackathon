@@ -1,26 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import CustomerView from './components/CustomerView';
-import { runSimulationAPI } from './services/apiClient';
-import { SimulationResponse } from './types';
+import { runSimulationAPI, fetchForecastData, fetchWeeklyOptions } from './services/apiClient';
+import { SimulationResponse, DayOption } from './types';
 
 const App: React.FC = () => {
   const [simData, setSimData] = useState<SimulationResponse | null>(null);
+  const [weeklyOptions, setWeeklyOptions] = useState<DayOption[]>([]);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
 
+  // Fetch weekly options on mount
+  useEffect(() => {
+    const loadWeeklyOptions = async () => {
+      const forecastData = await fetchForecastData();
+      if (forecastData) {
+        const options = fetchWeeklyOptions(forecastData);
+        setWeeklyOptions(options);
+      }
+    };
+    loadWeeklyOptions();
+  }, []);
+
+  // Fetch data for selected day
   useEffect(() => {
     const fetchData = async () => {
-      // Fetch from external API
       const apiResult = await runSimulationAPI({
         scenario: 'normal_day',
         participation_rate: 0.15,
         shift_fraction: 0.25
-      });
+      }, selectedDayIndex);
       
       if (apiResult) {
         setSimData(apiResult);
       }
     };
     fetchData();
-  }, []);
+  }, [selectedDayIndex]);
 
   if (!simData) {
     return (
@@ -34,7 +48,12 @@ const App: React.FC = () => {
   return (
     <div className="h-screen bg-slate-950 flex flex-col font-sans relative overflow-hidden">
       <div className="flex-1 flex items-center justify-center p-6 relative z-10">
-        <CustomerView data={simData} />
+        <CustomerView 
+          data={simData} 
+          weeklyOptions={weeklyOptions}
+          selectedDayIndex={selectedDayIndex}
+          onDayChange={setSelectedDayIndex}
+        />
       </div>
     </div>
   );

@@ -36,3 +36,10 @@ export interface SimulationResponse {
 }
 
 export type ScenarioType = 'normal_day' | 'hot_day' | 'football_day' | 'combined_day';
+
+export interface DayOption {
+  index: number;
+  day: string;
+  date: string;
+  scenario: string;
+}

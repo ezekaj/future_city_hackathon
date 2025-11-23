@@ -3,7 +3,7 @@
  * Handles communication with External API server
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://64.226.120.234:5000';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export interface SimulationParams {
   scenario: string;
@@ -38,19 +38,40 @@ export async function fetchForecastData(): Promise<any | null> {
 }
 
 /**
+ * Extract weekly day options from forecast data
+ */
+export function fetchWeeklyOptions(forecastData: any): any[] {
+  if (!forecastData || !forecastData.weeklyData) {
+    return [];
+  }
+  
+  return forecastData.weeklyData.map((day: any, index: number) => ({
+    index,
+    day: day.day,
+    date: day.date,
+    scenario: day.scenario || 'Normal Operation'
+  }));
+}
+
+/**
  * Transform forecast data to simulation response format
  */
-export function transformForecastToSimulation(forecastData: any): any {
+export function transformForecastToSimulation(forecastData: any, dayIndex: number = 0): any {
   if (!forecastData || !forecastData.weeklyData || forecastData.weeklyData.length === 0) {
     return null;
   }
 
-  const todayData = forecastData.weeklyData[0].data;
+  if (dayIndex < 0 || dayIndex >= forecastData.weeklyData.length) {
+    dayIndex = 0;
+  }
+
+  const selectedDay = forecastData.weeklyData[dayIndex];
+  const dayData = selectedDay.data;
   const quota_limit = forecastData.meta.quota_limit_l_s;
   const warning_threshold = forecastData.meta.warning_threshold_l_s;
 
   // Transform hourly data
-  const hourly_data = todayData.map((item: any, index: number) => {
+  const hourly_data = dayData.map((item: any, index: number) => {
     const flowRate = item.flowRate;
     const utilization = flowRate / quota_limit;
     
@@ -110,6 +131,11 @@ export function transformForecastToSimulation(forecastData: any): any {
       scenario: 'bwv_real_data',
       participation_rate: 0.15,
       shift_fraction: 0.25
+    },
+    dayInfo: {
+      day: selectedDay.day,
+      date: selectedDay.date,
+      scenario: selectedDay.scenario || 'Normal Operation'
     }
   };
 }
@@ -136,11 +162,11 @@ export async function fetchRealBaseline(): Promise<BaselineData | null> {
 /**
  * Run simulation via backend API (uses forecast data)
  */
-export async function runSimulationAPI(params: SimulationParams): Promise<any | null> {
+export async function runSimulationAPI(params: SimulationParams, dayIndex: number = 0): Promise<any | null> {
   // Fetch from /api/forecast and transform
   const forecastData = await fetchForecastData();
   if (forecastData) {
-    return transformForecastToSimulation(forecastData);
+    return transformForecastToSimulation(forecastData, dayIndex);
   }
   return null;
 }

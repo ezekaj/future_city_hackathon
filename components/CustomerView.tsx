@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SimulationResponse, TrafficLight } from '../types';
+import { SimulationResponse, TrafficLight, DayOption } from '../types';
 import { 
   Smartphone, ThumbsUp, AlertTriangle, Droplet, 
-  ChevronRight, Home, BarChart2, Award, User, Check, 
+  ChevronRight, ChevronDown, Home, BarChart2, Award, User, Check, 
   Zap, Clock, Shield, Leaf, Settings, Bell, HelpCircle,
   ArrowLeft, LogOut, Wifi
 } from 'lucide-react';
@@ -10,6 +10,9 @@ import { AreaChart, Area, XAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface Props {
   data: SimulationResponse;
+  weeklyOptions: DayOption[];
+  selectedDayIndex: number;
+  onDayChange: (index: number) => void;
 }
 
 // Helper for gradient transitions
@@ -19,7 +22,7 @@ const BackgroundLayer = ({ active, colorClass }: { active: boolean, colorClass: 
   />
 );
 
-const CustomerView: React.FC<Props> = ({ data }) => {
+const CustomerView: React.FC<Props> = ({ data, weeklyOptions, selectedDayIndex, onDayChange }) => {
   const [currentHourIndex, setCurrentHourIndex] = useState(17); // Start at 5 PM
   const [committedActions, setCommittedActions] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'home' | 'usage' | 'rewards' | 'profile'>('home');
@@ -166,10 +169,31 @@ const CustomerView: React.FC<Props> = ({ data }) => {
         </div>
       </div>
 
+      {/* Day Selector Dropdown */}
+      {weeklyOptions.length > 0 && (
+        <div className="px-6 mb-4 relative z-10">
+          <select
+            value={selectedDayIndex}
+            onChange={(e) => onDayChange(Number(e.target.value))}
+            className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-4 py-3 text-white text-sm font-medium appearance-none cursor-pointer focus:ring-2 focus:ring-white/40 focus:outline-none transition-all hover:bg-white/15"
+            style={{ backgroundImage: 'none' }}
+          >
+            {weeklyOptions.map((day) => (
+              <option key={day.index} value={day.index} className="bg-slate-900 text-white">
+                {day.day} - {day.scenario}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-10 top-1/2 -translate-y-1/2 pointer-events-none text-white/60" size={18} />
+        </div>
+      )}
+
       {/* Timeline Forecast */}
       <div className="mb-8 relative z-10">
         <div className="flex items-center justify-between px-6 mb-3">
-           <h3 className="text-xs font-bold text-white/60 uppercase tracking-wider">Forecast (Next 24h)</h3>
+           <h3 className="text-xs font-bold text-white/60 uppercase tracking-wider">
+             {weeklyOptions[selectedDayIndex]?.day || 'Forecast'} ({weeklyOptions[selectedDayIndex]?.date || '24h'})
+           </h3>
         </div>
         
         <div 
